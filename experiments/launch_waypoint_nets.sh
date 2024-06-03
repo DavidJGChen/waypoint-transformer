@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 config="experiments/config/d4rl/goal_network.cfg"
-declare -a envs=("antmaze-large-diverse-v2")
+declare -a envs=("antmaze-medium-diverse-v2")
 #declare -a envs=("antmaze-umaze-v0" "antmaze-umaze-diverse-v0" "antmaze-medium-diverse-v0" "antmaze-medium-play-v0" "antmaze-large-diverse-v0" "antmaze-large-play-v0")
 # declare -a envs=("kitchen-complete-v0" "kitchen-mixed-v0" "kitchen-partial-v0")
 # declare -a envs=("hopper-medium-replay-v2" "halfcheetah-medium-replay-v2" "walker2d-medium-replay-v2" "hopper-medium-v2" "halfcheetah-medium-v2" "walker2d-medium-v2")

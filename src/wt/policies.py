@@ -283,6 +283,8 @@ class ExtendedActorCriticPolicy(policies.ActorCriticPolicy):
         self.goal_network_ckpt = goal_network_ckpt
         if 'GOAL_NETWORK_CKPT' in os.environ:
             self.goal_network_ckpt = os.environ['GOAL_NETWORK_CKPT']
+        if self.goal_network_ckpt is not None:
+            print(f"Loading goal network from {self.goal_network_ckpt}")
 
         super(ExtendedActorCriticPolicy, self).__init__(
             observation_space,

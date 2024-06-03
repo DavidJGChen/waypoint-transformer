@@ -261,7 +261,7 @@ class D4RLIterableDataset(data.IterableDataset):
             artg = rtg[:, 0:1]
             artg = artg.repeat(1, s.shape[1], 1)
  
-        mask = torch.from_numpy(np.concatenate(mask, axis=0))
+        mask = torch.from_numpy(np.concatenate(mask, axis=0)).to(dtype=torch.float32)
 
         if self.config['goal_conditioned']:
             return s, a, g, mask
@@ -352,6 +352,7 @@ class AbstractDataModule(pl.LightningDataModule, ABC):
             num_workers=self.num_workers,
             generator=self.generator,
             worker_init_fn=seed_worker,
+            persistent_workers=True,
         )
 
     def val_dataloader(self) -> data.DataLoader:
@@ -362,6 +363,7 @@ class AbstractDataModule(pl.LightningDataModule, ABC):
             num_workers=self.num_workers,
             generator=self.generator,
             worker_init_fn=seed_worker,
+            persistent_workers=True,
         )
 
 

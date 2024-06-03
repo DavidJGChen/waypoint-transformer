@@ -120,16 +120,19 @@ def run_training(
         save_last=True,  # save latest model
         save_top_k=1,  # save top model based on monitored loss
     )
+    progress_bar_callback = pl.callbacks.TQDMProgressBar(refresh_rate=20)
     trainer = pl.Trainer(
-        gpus=int(use_gpu),
-        auto_lr_find=auto_tune_lr,
+        accelerator="gpu",
+        devices=1,
+        # gpus=int(use_gpu),
+        # auto_lr_find=auto_tune_lr,
         max_epochs=epochs,
         max_steps=max_steps,
         max_time=train_time,
         logger=wandb_logger,
-        progress_bar_refresh_rate=20,
-        callbacks=[periodic_checkpoint_callback, val_checkpoint_callback],
-        track_grad_norm=-1,  # logs the 2-norm of gradients
+        # progress_bar_refresh_rate=20,
+        callbacks=[periodic_checkpoint_callback, val_checkpoint_callback, progress_bar_callback],
+        # track_grad_norm=-1,  # logs the 2-norm of gradients
         limit_val_batches=1.0 if val_frac > 0 else 0,
         limit_test_batches=0,
     )
