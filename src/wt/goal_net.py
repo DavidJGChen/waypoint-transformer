@@ -198,4 +198,3 @@ class ManualGoalNetwork(nn.Module):
         global_prox_cond = torch.linalg.norm(self.goals[sorted_idx] - global_goals.unsqueeze(-2), dim = -1) < torch.linalg.norm(loc - global_goals, dim = -1).unsqueeze(-1)
         selected = global_prox_cond.int().argmax(dim = -1)
         return self.goals[selected]
-

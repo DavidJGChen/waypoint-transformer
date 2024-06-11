@@ -192,10 +192,11 @@ def analyze_antmaze(
     env: ant.AntMazeEnv,
     trajectory_samples: int = 200,
     wandb_run: Optional[Run] = None,
+    save_trajectories: bool = False,
 ) -> None:
     """Analyze the performance of an AntMaze run."""
     reward_vecs = [
-        step.eval_d4rl_antmaze(policy, env, trajectory_samples=trajectory_samples)
+        step.eval_d4rl_antmaze(policy, env, trajectory_samples=trajectory_samples, save_trajectories=save_trajectories)
         for policy in loaded_policies
     ]
     visualize.visualize_cumulative_reward(
@@ -281,7 +282,9 @@ def analyze_performance(
     analysis: str = "all",
     wandb_run: Optional[Run] = None,
     last_checkpoints_too: bool = True,
+    save_trajectories: bool = False,
 ) -> None:
+    print(f"Analyzing {out_directory}...")
     """Main method that calls the appropriate helper method to run the analysis."""
     checkpoints, attribute_dicts, parameters, env = util.load_experiment(
         out_directory,
@@ -327,6 +330,7 @@ def analyze_performance(
             env,
             trajectory_samples=trajectory_samples,
             wandb_run=wandb_run,
+            save_trajectories=save_trajectories,
         )
         return
     # command the various kitchen subtasks
@@ -430,6 +434,7 @@ if __name__ == "__main__":
         help="place networks and data on the GPU",
     )
     parser.add_argument("--which_gpu", default=0, type=int, help="which GPU to use")
+    parser.add_argument("--save_trajectories", action="store_true", default=False, help="save trajectories")
 
     args = parser.parse_args()
     run_dir = args.run_id
@@ -442,4 +447,5 @@ if __name__ == "__main__":
         analysis=args.analysis,
         wandb_run=wandb_run,
         last_checkpoints_too=not args.val_checkpoint_only,
+        save_trajectories=args.save_trajectories,
     )

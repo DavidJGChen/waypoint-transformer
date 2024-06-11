@@ -25,8 +25,9 @@ from torch.utils import data
 
 from wt import step, util
 
-max_num_workers = 16
-
+# max_num_workers = 16
+max_num_workers = 8
+# max_num_workers = 1
 
 def create_data_module(
     env: gym.Env,
@@ -200,15 +201,22 @@ class D4RLIterableDataset(data.IterableDataset):
         # cfae5609cee79e5a2228fb7653451023c41a64cb/gcsl/algo/buffer.py#L78
         trajectory_indices = np.random.choice(len(self.trajectories), self.index_batch_size,
                                               p = self.lengths / sum(self.lengths))
+        # print(f"index_batch_size: {self.index_batch_size}")
+        # print(f"num trajectories: {len(self.trajectories)}")
+        # print(f"trajectory_indices: {trajectory_indices}")
         lengths = np.array([len(self.trajectories[i]['observations']) for i in trajectory_indices])
         proportional_indices_1 = np.random.rand(self.index_batch_size)
         proportional_indices_2 = np.random.rand(self.index_batch_size)
+        # print(f"proportional_indices_1: {proportional_indices_1}")
+        # print(f"proportional_indices_2: {proportional_indices_2}")
         time_indices_1 = np.floor(
             proportional_indices_1 * lengths,
         ).astype(int)
+        # print(f"time_indices_1: {time_indices_1}")
         time_indices_2 = np.floor(
             proportional_indices_2 * lengths,
         ).astype(int)
+        # print(f"time_indices_2: {time_indices_2}")
 
         start_indices = np.minimum(
             time_indices_1,
@@ -218,6 +226,8 @@ class D4RLIterableDataset(data.IterableDataset):
             time_indices_1,
             time_indices_2,
         )
+        # print(f"start_indices: {start_indices}")
+        # print(f"goal_indices: {goal_indices}")
 
         return trajectory_indices, start_indices, goal_indices
 
@@ -239,6 +249,8 @@ class D4RLIterableDataset(data.IterableDataset):
 
             # padding and state + reward normalization
             tlen = s[-1].shape[1]
+            # print(f"tlen: {tlen}")
+            # print(f"K: {K}")
             if self.augment:
                 pass
             s[-1] = np.concatenate([np.zeros((1, K - tlen, state_dim)), s[-1]], axis=1)
@@ -605,7 +617,20 @@ class D4RLRvSGDataModule(AbstractDataModule):
     def setup(self, stage: Optional[str] = None) -> None:
         """Create the training and validation data."""
         dataset = self.env.get_dataset()
+        # print(f"Dataset keys: {dataset.keys()}")
+        # for k in dataset.keys():
+        #     print(f"{k}: {dataset[k].shape}")
         paths = self._get_paths(dataset)
+        # print(f"Num paths: {len(paths)}")
+        # print(f"Path keys: {paths[0].keys()}")
+        # for i in range(5):
+        #     print(f"Path {i}:")
+        #     for k in paths[i].keys():
+        #         print(f"{k}: {paths[i][k].shape}")
+        # print(paths[0]['observations'].shape)
+        # print(paths[0]['actions'].shape)
+        # print(paths[0]['rewards'].shape)
+        # print(paths[0]['terminals'].shape)
         train_indices, val_indices = d4rl_trajectory_split(paths, self.val_frac)
 
         train_dataset = D4RLIterableDataset(
@@ -642,6 +667,9 @@ class D4RLRvSGDataModule(AbstractDataModule):
 
         episode_step = 0
         paths = []
+        # print(np.where(dataset["timeouts"] == True))
+        # print(np.where(dataset["rewards"] == 1.0))
+        # print(np.where(dataset["terminals"] == True))
         for i in range(N):
             if step.is_antmaze_env(self.env):
                 done_bool = dataset["timeouts"][i]
@@ -658,4 +686,56 @@ class D4RLRvSGDataModule(AbstractDataModule):
                 paths.append(episode_data)
                 data_ = collections.defaultdict(list)
             episode_step += 1
+        # print(f"Path 0 rewards {np.sum(paths[0]['rewards'])}")
+        # print(f"Path 1 rewards {np.sum(paths[1]['rewards'])}")
+        # print(f"Path 2 rewards {np.sum(paths[2]['rewards'])}")
+        # print(f"Path 2 obs:")
+        # print(paths[2]['observations'][420:450,:2])
+        # print(paths[2]['rewards'][420:450])
+        # for i in range(len(paths)):
+        #     curr_xy = paths[i]['observations'][0,:2]
+        #     old_xy = curr_xy
+        #     for j in range(len(paths[i]['observations'])):
+        #         curr_xy = paths[i]['observations'][j,:2]
+        #         if np.linalg.norm(curr_xy - old_xy) > 0.5:
+        #             print(paths[i]['observations'][j-10:j+2,:2])
+        #         old_xy = curr_xy
+                
         return np.array(paths)
+
+if __name__ == "__main__":
+    env_name = "antmaze-large-diverse-v2"
+
+    env = step.create_env(
+        env_name,
+        50,
+        False,
+        seed=27,
+    )
+
+    data_module = create_data_module(
+        env,
+        env_name,
+        None,
+        batch_size=1024,
+        val_frac=0,
+        unconditional_policy=False,
+        reward_conditioning=False,
+        seed=25,
+        train_goal_net = True,
+        K = 40
+    )
+    data_module.setup()
+    # print(data_module.data_train)
+    # for ndx, batch in enumerate(data_module.train_dataloader()):
+    #     print("Batch: ", ndx)
+    #     print(len(batch))
+    #     print(batch[0].shape)
+    #     print(batch[1].shape)
+    #     print(batch[2].shape)
+    #     for i in range(batch[0].shape[1]):
+    #         print(batch[0][0,i,:2])
+    #         print(batch[0][0,i,-2:])
+    #     # print(batch[0][0,0,:2])
+    #     if ndx > 3:
+    #         break

@@ -3,7 +3,7 @@
 config="experiments/config/d4rl/antmaze_rvs_g.cfg"
 #declare -a envs=("antmaze-umaze-v0" "antmaze-umaze-diverse-v0" "antmaze-medium-diverse-v0" "antmaze-medium-play-v0" "antmaze-large-diverse-v0" "antmaze-large-play-v0")
 declare -a envs=("antmaze-umaze-v2")
-seeds=42
+seeds=43
 use_gpu=false
 
 for env in "${envs[@]}"; do

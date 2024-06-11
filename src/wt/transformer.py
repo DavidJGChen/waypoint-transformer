@@ -316,6 +316,7 @@ class TransformerExtractor(MlpExtractor):
             If all layers are shared, then ``latent_policy == latent_value``
         """
         features = self.goal_extract(features)
+        # print("@@@@@@@@@@@", features[0].device)
         if not DEPRECATED:
             base_features, self.action_features = self.transformer_base(features)
             shared_latent = self.mlp_head(base_features)
@@ -328,6 +329,8 @@ class TransformerExtractor(MlpExtractor):
             self.goal_network = goal_net.KForwardGoalNetwork.load_from_checkpoint(
                 self.goal_network_ckpt, **self.cfg
             ).to(features[0].device)
+            # print("@@@@@@@", self.device)
+            # print("@@@@@@@", features[0].device)
             self.goal_network.eval()
             for p in self.goal_network.parameters():
                 p.requires_grad = False
@@ -339,5 +342,5 @@ class TransformerExtractor(MlpExtractor):
             # print(new_goals[0, -1], obs[0, -1, :2])
             if os.environ.get('TRACK_GOALS'):
                 global GOAL_NET_OUT
-                GOAL_NET_OUT.extend(new_goals[:, -1].numpy().reshape((-1, 2)).tolist())
+                GOAL_NET_OUT.extend(new_goals[:, -1].cpu().numpy().reshape((-1, 2)).tolist())
         return torch.cat([obs, new_goals], dim = -1), actions

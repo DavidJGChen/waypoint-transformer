@@ -247,7 +247,7 @@ class RvS(pl.LightningModule):
                 s_tensor = torch.tensor(observations)
                 actions = self.model._predict(s_tensor, deterministic=deterministic)
             else:
-                s_g_tensor = dataset.make_s_g_tensor(observations, goals).float()
+                s_g_tensor = dataset.make_s_g_tensor(observations, goals).float().to('mps')
                 actions = self.model._predict([s_g_tensor, torch.tensor(actions).float() if actions is not None else actions], deterministic=deterministic)
 
         return actions.cpu().numpy()

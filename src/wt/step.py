@@ -73,7 +73,6 @@ s_ach_goal_vecs_file = "s_ach_goal_vecs.npy"
 a_vecs_file = "a_vecs.npy"
 base_actions_file = "base_actions.npy"
 
-
 def save_rollouts(
     rollout_dir: str,
     s_obs_vecs: Union[np.ndarray, List[np.ndarray]],
@@ -662,31 +661,53 @@ def eval_d4rl_antmaze(
     policy: Union[policies.RvS, Callable[[np.ndarray, np.ndarray], np.ndarray]],
     env: ant.AntMazeEnv,
     trajectory_samples: int = 200,
+    save_trajectories: bool = False,
 ) -> np.ndarray:
     """Evaluate cumulative reward in AntMaze."""
     assert env.reward_type == "sparse"
     total_reward_vec = []
+    episodes = []
+    all_waypoints = []
     for _ in tqdm.trange(trajectory_samples, desc="Sampling trajectory rewards"):
+        episode_states = []
+        episode_actions = []
         total_reward = 0
         observation = env.reset()
         if os.environ.get('debug'):
             frames = [render_env(env, mode="rgb_array")]
         manager = goal_net.Manager(np.array(env.target_goal))
         done = False
+        if os.environ.get('TRACK_GOALS'):
+            wt.transformer.GOAL_NET_OUT = []
         while not done:
+            episode_states.append(observation)
             manager.update_obs(observation)
             assert np.all(np.isclose(observation[:2], env.get_xy()))
             action = get_action_from_policy(policy, manager.observations, manager.goal, actions = manager.actions)
+            episode_actions.append(action)
             manager.update_act(action)
             observation, reward, done, _ = env.step(action)
             total_reward += reward
         total_reward_vec.append(total_reward)
+        episodes.append({'observations': np.array(episode_states), 'actions': np.array(episode_actions)})
+        if os.environ.get('TRACK_GOALS'):
+            all_waypoints.append(np.array(wt.transformer.GOAL_NET_OUT))
         if os.environ.get('debug'):
             frames.append(render_env(env, mode="rgb_array"))
             print("Rolling Average:", np.mean(total_reward_vec))
 
     total_rewards = np.array(total_reward_vec)
-    print("Average Reward:", np.mean(total_rewards))
+    avg_reward = np.mean(total_rewards)
+    print("Average Reward:", avg_reward)
+
+    if save_trajectories:
+        filename=f"wt_trajectories_{env.spec.id}_{avg_reward}.npy"
+        np.save(filename, episodes)
+        print(f'Trajectories saved to {filename}')
+    if os.environ.get('TRACK_GOALS'):
+        filename=f"wt_waypoints_{env.spec.id}_{avg_reward}.npy"
+        np.save(filename, all_waypoints)
+        print(f'Waypoint trajectories saved to {filename}')
     return total_rewards
 
 
